@@ -1,0 +1,67 @@
+import requests
+
+
+def get_authenticated_session():
+    """执行登录并返回一个配置好 Token 和 Cookie 的 session 对象"""
+    login_url = "https://ri52p630j.cg.ink/auth/oauth/token"
+
+    # 初始化 session 并设置基础 Header
+    session = requests.Session()
+    session.headers.update({
+        'accept': 'application/json, text/plain, */*',
+        'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        'appsystem': 'Windows11',
+        'browsertype': 'Chrome',
+        'companycode': '2610',
+        'sitecode': '2610',  # <--- 确保 Header 里也有这个
+        'content-type': 'application/json',
+        'device': '90d306f5-e73e-4440-a2bd-855f98a1dd0c',
+        'language': 'zh',
+        'loginbacktype': '3',
+        'origin': 'https://ri52p630j.cg.ink',
+        'referer': 'https://ri52p630j.cg.ink/',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+    })
+
+    otp = input("请输入Google验证码: ")
+
+    payload = {
+        'username': 'wnsrll01',
+        'password': 'd11713e1c0208fc92013af0eee455815cdf8b4387749ec467e868e0cc0fa9918',
+        'randomStr': '69481772227817734',
+        'code': 'ewp5',
+        'grant_type': 'password',
+        'gaCode': otp,
+    }
+
+    try:
+        res = session.post(login_url, json=payload).json()
+        token = res.get("access_token")
+
+        if token:
+            # 自动注入 Authorization，后续调用无需再手动传
+            session.headers.update({"Authorization": f"Bearer {token}"})
+            print("系统：登录成功，Session 已激活。")
+            return session
+        else:
+            print(f"系统：登录失败 -> {res}")
+            return None
+    except Exception as e:
+        print(f"系统：发生异常 -> {e}")
+        return None
+
+
+# --- 在其他地方调用的例子 ---
+
+# 第一步：获取带身份的 session
+active_session = get_authenticated_session()
+print(active_session)
+
+if active_session:
+    # 第二步：直接用这个 session 请求任何接口
+    # 它已经自带了 Cookie 和 Authorization Header
+    test_url = "https://ri52p630j.cg.ink/api/go-gateway-internal/admin/member/user/advancedGetUserListV2"
+    test_data = {'siteCode': '2610', 'username': 'qhdo6235', 'current': 1, 'size': 10}
+
+    response = active_session.post(test_url, json=test_data)
+    print("查询结果:", response.text)
